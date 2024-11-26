@@ -2,6 +2,7 @@ import asyncio
 
 import av
 from av.video.stream import VideoStream
+from PIL import Image
 
 from .sync_to_async import run_function_async
 from .durations_to_frames import durations_to_frames
@@ -14,7 +15,6 @@ class AVIF:
         self._loop = loop
         self._tmpdir = tmpdir
         self._container = av.open(file_path)
-        self._stream_index = self._select_video_stream()
 
     async def extract_frames(self) -> tuple[int, int]:
         return await run_function_async(self._loop, self.__extract_frames)
@@ -26,16 +26,24 @@ class AVIF:
         self._container.close()
 
     def __extract_frames(self) -> tuple[int, int]:
+        streams_len = len(self._container.streams.video)
         durations = self.__get_durations()
         gcd, frames = durations_to_frames(durations)
         file_index = 0
         self._container.seek(0)
-        for frame, repeat in zip(
-            self._container.decode(video=self._stream_index),
+        frames_stream = list(self._container.decode(video=streams_len - 2))
+        self._container.seek(0)
+        alpha_stream = list(self._container.decode(video=streams_len - 1))
+        for frame, alpha, repeat in zip(
+            frames_stream,
+            alpha_stream,
             frames.values(),
         ):
             for _ in range(repeat):
-                frame.to_image().save(f"{self._tmpdir}/{file_index:08d}.png")
+                image = frame.to_image()
+                alpha_image = Image.fromarray(alpha.to_ndarray(), "L")
+                image.putalpha(alpha_image)
+                image.save(f"{self._tmpdir}/{file_index:08d}.png")
                 file_index += 1
         return gcd, file_index
 
@@ -43,7 +51,9 @@ class AVIF:
         durations = []
         prev_duration = 0
         self._container.seek(0)
-        for i, frame in enumerate(self._container.decode(video=self._stream_index)):
+        for i, frame in enumerate(
+            self._container.decode(video=len(self._container.streams.video) - 2)
+        ):
             ms_duration = frame.pts * 10
             if i == 0:
                 continue
@@ -52,15 +62,3 @@ class AVIF:
         if self._container.duration:
             durations.append(round(self._container.duration / 1000) - ms_duration)
         return durations
-
-    def _select_video_stream(self) -> int:
-        for i, video in enumerate(self._container.streams.video):
-            if video.pix_fmt == "gray" or video.metadata.get("title", None) == "Alpha":
-                continue
-            if len(self._container.streams.video) == 2:
-                return i
-            elif len(self._container.streams.video) == 4 and video.frames > 1:
-                return i
-        return self._container.streams.video.index(
-            self._container.streams.best("video")
-        )
