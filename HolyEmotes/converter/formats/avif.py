@@ -4,8 +4,7 @@ import av
 from av.video.stream import VideoStream
 from PIL import Image
 
-from .sync_to_async import run_function_async
-from .durations_to_frames import durations_to_frames
+from .utils import run_function_async, durations_to_frames
 
 
 class AVIF:
