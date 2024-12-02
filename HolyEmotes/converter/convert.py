@@ -47,29 +47,6 @@ class Converter:
             if duration >= MAX_DURATION:
                 speed_up = round((duration / (MAX_DURATION)), 5)
             return await self.render(fps, tmpdir, speed_up), "webm"
-            return
-            if "gif" in mime:
-                durations = self.get_gif_durations()
-                if not durations or len(durations) == 1:
-                    return await self.convert_to_webp(), "webp"
-            elif "webp" in mime:
-                durations = await self.get_webp_durations()
-                if not durations or len(durations) == 1:
-                    return await self.convert_to_webp(), "webp"
-            elif "avif" in mime:
-                durations = self.get_avif_durations()
-                if not durations or len(durations) == 1:
-                    return await self.convert_to_webp(), "webp"
-            else:
-                return await self.convert_to_webp(), "webp"
-            print(durations)
-            fps = min(1000 / min(durations), 30)
-            all_frames = self.get_frames(durations, tmpdir)
-            duration = all_frames / fps
-            speed_up = None
-            if duration >= MAX_DURATION:
-                speed_up = round((duration / (MAX_DURATION)), 5)
-            return await self.render(fps, tmpdir, speed_up), "webm"
 
     async def convert_to_webp(self) -> bytes:
         proc = await asyncio.create_subprocess_exec(
@@ -178,7 +155,7 @@ if __name__ == "__main__":
     async def main():
         loop = asyncio.get_event_loop()
         conv = Converter(
-            loop, "/home/user/projects/7tvtotelegram/wicked.webp", "regular"
+            loop, "/home/user/projects/7tvtotelegram/wicked.avif", "regular"
         )
         content, ext = await conv.convert()
         with open(f"test.{ext}", "wb") as f:
