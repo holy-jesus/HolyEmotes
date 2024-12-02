@@ -155,7 +155,7 @@ if __name__ == "__main__":
     async def main():
         loop = asyncio.get_event_loop()
         conv = Converter(
-            loop, "/home/user/projects/7tvtotelegram/wicked.avif", "regular"
+            loop, "/home/user/projects/7tvtotelegram/countdown.webp", "regular"
         )
         content, ext = await conv.convert()
         with open(f"test.{ext}", "wb") as f:

@@ -48,6 +48,7 @@ class WEBP:
             self._image.seek(frame_index)
             for _ in range(repeat):
                 self._image.save(f"{self._tmpdir}/{file_index:08d}.png")
+                file_index += 1
         return file_index
 
     def __close(self):
